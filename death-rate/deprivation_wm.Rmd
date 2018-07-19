@@ -7,7 +7,7 @@ This is the R Notebook for the story "Avoidable mortality 32% higher in the West
 
 It provides with the statistical analysis for the story. 
 
-The data comes from the BBC Data Shared Unit, and the correlation analysis that I did for them can be found in the R Notebook called Death correlations. 
+The data comes from the BBC Data Shared Unit, and the correlation analysis can be found in the R Notebook called Death correlations. 
 
 # Importing and checking data
 
