@@ -4,9 +4,9 @@ I published this story [Avoidable death 32% higher in the West Midlands’ most 
 
 The R Notebook with the explanation of the analysis for the West Midlands and the interactive charts can be found [here.](http://rpubs.com/Carmen_Aguilar/correlation-and-funnelplot) 
 
-![Funnelplot](/avoidable-death-rate/funnelplot.png)
+![Funnelplot](https://github.com/Carmen-Aguilar/avoidable-death-rate/blob/master/funnelplot.png)
 
-![Dotchart](/avoidable-death-rate/chart2.png)
+![Dotchart](https://github.com/Carmen-Aguilar/avoidable-death-rate/blob/master/chart2.png)
 
 And [here](avoidable-death-rate/Death_correlation.Rmd) is the correlation analysis for England and Wales.
 
