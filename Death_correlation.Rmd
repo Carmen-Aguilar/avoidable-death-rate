@@ -1,0 +1,142 @@
+---
+title: "Avoidable death correlations"
+output: html_notebook
+---
+# Importing
+
+```{r}
+england <- read_excel("Avoidable death rates for sharing.xlsx", sheet = 1)
+wales <- read_excel("Avoidable death rates for sharing.xlsx", sheet = 2)
+Scotland <- read_excel("Avoidable death rates for sharing.xlsx", sheet = 3)
+Scotland <- Scotland[1:7]
+NI  <- read_excel("Avoidable death rates for sharing.xlsx", sheet = 4)
+```
+
+# England
+
+```{r}
+england_avoidable <- england %>% filter(`Mortality
+` == "Avoidable")
+colnames(england_avoidable)[11]<-"Deprivation"
+```
+
+
+```{r}
+colnames(england_avoidable)
+unique(england_avoidable$Sex)
+unique(england_avoidable$`Mortality\n`)
+```
+
+
+```{r}
+england_person_avoidable <- england_avoidable %>% filter(Sex == "Persons")
+england_men_avoidable <- england_avoidable %>% filter(Sex == "Males")
+england_women_avoidable <- england_avoidable %>% filter(Sex == "Females")
+```
+
+
+```{r}
+cor.test(england_person_avoidable$Deprivation, england_person_avoidable$`AS Rate`)
+cor.test(england_men_avoidable$Deprivation, england_men_avoidable$`AS Rate`)
+cor.test(england_women_avoidable$Deprivation, england_women_avoidable$`AS Rate`)
+```
+
+```{r}
+#Regression
+plot(england_person_avoidable$Deprivation, england_person_avoidable$`AS Rate`, main = "Avoidable deaths & deprivation - England", xlab = "Rank of proportion of LSOAs in most deprived 10% nationally", ylab = "Ratio Avoidable deaths")
+abline(lm(england_person_avoidable$`AS Rate` ~ england_person_avoidable$Deprivation), col = "blue")
+```
+```{r}
+summary(lm(england_person_avoidable$`AS Rate` ~ england_person_avoidable$Deprivation))
+```
+
+
+# Scotland
+
+```{r}
+Scotland <- Scotland[-c(33,34),]
+cor(Scotland$`Rank of deprivation`, Scotland$`Rate per 100,000 population 2016`)
+```
+
+```{r}
+cor.test(Scotland$`Rank of deprivation`, Scotland$`Rate per 100,000 population 2016`)
+```
+
+```{r}
+#Regression
+plot(Scotland$`Rank of deprivation`, Scotland$`Rate per 100,000 population 2016`, main = "Avoidable deaths & deprivation - Scotland", xlab = "Rank deprivation", ylab = "Ratio Avoidable deaths")
+abline(lm(Scotland$`Rate per 100,000 population 2016` ~ Scotland$`Rank of deprivation`), col = "blue")
+```
+```{r}
+summary(lm(Scotland$`Rate per 100,000 population 2016` ~ Scotland$`Rank of deprivation`))
+```
+
+# Finding best regression model
+
+```{r}
+summary(lm(log(Scotland$`Rate per 100,000 population 2016`) ~ Scotland$`Rank of deprivation`))
+```
+```{r}
+plot(Scotland$`Rank of deprivation`, Scotland$`Rate per 100,000 population 2016`)
+lines(timevalues, Counts.exponential2,lwd=2, col = "red")
+```
+```{r}
+wales <- read.csv("Avoidable death rates for sharing - Wales.csv")
+wales <- wales[-c(11,12,13)]
+```
+
+```{r}
+#only persons
+wales_persons <- wales %>% filter(Sex == "Persons")
+```
+
+```{r}
+wales_persons$X..of.wards.in.top.10..deprived <- gsub("%", "", wales_persons$X..of.wards.in.top.10..deprived)
+wales_persons$X..of.wards.in.top.10..deprived <- as.numeric(wales_persons$X..of.wards.in.top.10..deprived)
+```
+
+
+```{r}
+cor.test(wales_persons$AS.Rate, wales_persons$Rank)
+cor.test(wales_persons$AS.Rate, wales_persons$X..of.wards.in.top.10..deprived)
+```
+
+# Funnel plot for England
+
+```{r}
+LA <- eng_all$`Local Authority`
+deaths <- eng_all$`AS Rate`/100000
+people <- eng_all$`All ages`
+death.se <- sqrt((deaths*(1-deaths)) / (people))
+df <- data.frame(LA, deaths, people, death.se)
+```
+
+
+```{r}
+## common effect (fixed effect model) -- Mean value
+deaths.fem <- weighted.mean(deaths, 1/death.se^2)
+```
+
+```{r}
+## lower and upper limits for 95% and 99.9% CI, based on FEM estimator
+people.seq <- seq(10000, max(people), 10000)
+number.ll95 <- deaths.fem - 1.96 * sqrt((deaths.fem*(1-deaths.fem)) / (people.seq)) 
+number.ul95 <- deaths.fem + 1.96 * sqrt((deaths.fem*(1-deaths.fem)) / (people.seq)) 
+number.ll999 <- deaths.fem - 3.29 * sqrt((deaths.fem*(1-deaths.fem)) / (people.seq)) 
+number.ul999 <- deaths.fem + 3.29 * sqrt((deaths.fem*(1-deaths.fem)) / (people.seq)) 
+dfCI <- data.frame(number.ll95, number.ul95, number.ll999, number.ul999, people.seq, deaths.fem)
+```
+
+```{r}
+## draw plot
+fp <- ggplot(aes(x = people, y = deaths), data = df) +
+    geom_point(shape = 1) +
+    geom_line(aes(x = people.seq, y = number.ll95), data = dfCI, col = "orange") +
+    geom_line(aes(x = people.seq, y = number.ul95), data = dfCI, col = "orange")+
+    geom_line(aes(x = people.seq, y = number.ll999), linetype = "dashed", data = dfCI, col = "orange") +
+    geom_line(aes(x = people.seq, y = number.ul999), linetype = "dashed", data = dfCI, col = "orange") +
+   geom_hline(aes(yintercept = deaths.fem), data = dfCI, col = "blue") +
+  xlim(0,1150000) + scale_y_continuous(labels = function(y) y*100000) +
+geom_text(data=subset(df, people > 500000 | deaths > 300), aes(people,deaths,label=LA))
+fp
+```
