@@ -1,0 +1,169 @@
+---
+title: "Avoidable deaths in deprived areas - West Midlands"
+output: html_notebook
+---
+
+This is the R Notebook for the story "Avoidable mortality 32% higher in the West Midlands most deprived cities" <a href="https://wp.me/p46xeo-18W">published in Birmingham Eastside.</a>
+
+It provides with the statistical analysis for the story. 
+
+The data comes from the BBC Data Shared Unit, and the correlation analysis that I did for them can be found in the R Notebook called Death correlations. 
+
+# Importing and checking data
+
+```{r}
+wm <- england %>% filter(Region == "West Midlands")
+colnames(wm)[11]<- "Deprivation"
+wm %>% filter(`Local Authority` == "Birmingham")
+```
+```{r}
+#Fill down empty rows
+wm <- wm %>% group_by(`Local Authority`) %>% fill(Deprivation)
+```
+
+```{r}
+length(which(is.na(wm)))
+```
+
+# Preparing data
+
+```{r}
+wm_persons_avoidable <- wm %>% filter(Sex == "Persons" & `Mortality
+` == "Avoidable")
+wm_women_avoidable <- wm %>% filter(Sex == "Females" & `Mortality
+` == "Avoidable")
+wm_men_avoidable <- wm %>% filter(Sex == "Males" & `Mortality
+` == "Avoidable")
+write.csv(wm_persons_avoidable, "wm_avoidable.csv")
+```
+
+```{r}
+wm_gender_avoidable <- wm %>% filter(`Mortality
+` == "Avoidable" & Sex != "Persons")
+write.csv(wm_gender_avoidable, "wm_gender_avoidable.csv")
+```
+
+
+# Analysis
+
+```{r}
+summary(wm_persons_avoidable$`AS Rate`)
+sd(wm_persons_avoidable$`AS Rate`)
+cor.test(wm_persons_avoidable$`AS Rate`, wm_persons_avoidable$Deprivation)
+```
+
+
+```{r}
+plot(wm_persons_avoidable$Deprivation,wm_persons_avoidable$`AS Rate`, main = "Avoidable mortality higher in deprived areas", xlab = "1 most deprived and 211 least deprived", ylab = "Avoidable death rate per 100,000 inhabitants")
+abline(lm(wm_persons_avoidable$`AS Rate` ~ wm_persons_avoidable$Deprivation))
+```
+
+```{r}
+boxplot(wm_persons_avoidable$`AS Rate`, horizontal = TRUE, axes = FALSE, main = "Avoidable deaths per 100,000 persons") 
+text(x=fivenum(wm_persons_avoidable$`AS Rate`), labels = fivenum(wm_persons_avoidable$`AS Rate`), y=1.25)
+```
+
+<strong>Who?</strong>
+
+The national mean in England is 218 avoidable deaths per 100,000 similar to the West Midlands one. 50% of the local authorities are above that mean. 
+
+```{r}
+#Highest death rate
+wm_persons_avoidable %>% select(`Local Authority`, `AS Rate`, Deprivation)  %>% filter(`AS Rate` >= 241) %>% arrange(desc(`AS Rate`))
+```
+```{r}
+#Lowest death rate
+wm_persons_avoidable %>% select(`Local Authority`, `AS Rate`, Deprivation)  %>% filter(`AS Rate` <= 191) %>% arrange(desc(`AS Rate`))
+```
+
+
+```{r}
+# Fourth quantile
+wm_persons_avoidable %>% filter(`AS Rate` >= 241) %>% group_by(Region) %>% summarise(mean(`AS Rate`))
+```
+
+```{r}
+# 2-4 quantile
+wm_persons_avoidable %>% filter(`AS Rate` < 241) %>% group_by(Region) %>% summarise(mean(`AS Rate`))
+```
+```{r}
+(272.1125-205.5909)/205.5909*100
+```
+32% higher death rate in the most deprived quantile. 
+
+## Funnel plot
+
+The random variation in the data is higher in small populations. The funnel plots are a useful way to control for that. 
+
+```{r}
+wm_funnelplot <- eng_all %>% filter(Region == "West Midlands")
+wm_funnelplot <- wm_funnelplot %>% select(`Local Authority`, `AS Rate`, `All ages`)
+wm_funnelplot$`AS Rate` <- wm_funnelplot$`AS Rate`/100000
+wm_funnelplot$D_SE <- sqrt((wm_funnelplot$`AS Rate`*(1-wm_funnelplot$`AS Rate`)) / (wm_funnelplot$`All ages`))
+colnames(wm_funnelplot) <- c("LA", "Death", "Pop", "SE_Death")
+```
+
+```{r}
+## common effect (fixed effect model) -- Mean
+death.fem <- weighted.mean(wm_funnelplot$Death, 1/wm_funnelplot$SE_Death^2)
+```
+
+```{r}
+## lower and upper limits for 95% and 99.9% CI, based on FEM estimator
+pop.seq <- seq(10000, max(wm_funnelplot$Pop), 10000)
+ll95 <- death.fem - 1.96 * sqrt((death.fem*(1-death.fem)) / (pop.seq)) 
+ul95 <- death.fem + 1.96 * sqrt((death.fem*(1-death.fem)) / (pop.seq)) 
+ll999 <- death.fem - 3.29 * sqrt((death.fem*(1-death.fem)) / (pop.seq)) 
+ul999 <- death.fem + 3.29 * sqrt((death.fem*(1-death.fem)) / (pop.seq)) 
+CI <- data.frame(ll95, ul95, ll999, ul999, pop.seq, death.fem)
+```
+
+```{r}
+## draw plot
+FP_WM_only <- ggplot(aes(x = Pop, y = Death), data = wm_funnelplot) +
+    geom_point(shape = 1, aes(text = paste(LA,"<br>","Avoidable death rate: ",(Death*100000))), size = 2) +
+    geom_line(aes(x = pop.seq, y = ll95, color = "steelblue3"), data = CI, color = "steelblue3") +
+    geom_line(aes(x = pop.seq, y = ul95, color = "steelblue3"), data = CI, color = "steelblue3")+
+    geom_line(aes(x = pop.seq, y = ll999, color = "steelblue1"), linetype = "dashed", data = CI, color = "steelblue1") +
+    geom_line(aes(x = pop.seq, y = ul999, color = "steelblue1"), linetype = "dashed", data = CI, color = "steelblue1") + geom_hline(aes(yintercept = death.fem, color = "olivedrab"), data = CI, color = "olivedrab") + xlim(0,1150000) + scale_y_continuous(labels = function(y) y*100000) + labs(title = "Avoidable deaths in the West Midlands", x = "Local authority population size", y = "Avoidable deaths per 100,000\n\n")  + annotate("text",900000,.00390, label="99.9% limits", col="steelblue1", size=3.5, hjust=0)+ annotate("text",900000,.00372, label="95% limits", col="steelblue3", size=3.5, hjust=0) + annotate("text",900000,.00355, label="Regional mean", col="olivedrab", size=3.5, hjust=0) + theme_bw()
+FP_WM_only
+```
+The blue lines are the CI 95% and 99.9% and the green line is the regional mean. The dots inside the lines are within the "expected" random variation, while the dots outside is more unlikely to be due to the random variation caused by the sample side. 
+
+I make the chart interactive to explore the information. 
+
+```{r}
+install.packages("plotly")
+library(plotly)
+```
+
+```{r}
+chart <- ggplotly(FP_WM_only, tooltip = c("text"))
+chart
+```
+
+```{r}
+#To share in plotly
+Sys.setenv("plotly_username"="CarmenAguilar")
+Sys.setenv("plotly_api_key"="Tdpsdo2VWILpCenOMOQi")
+```
+
+
+
+```{r}
+chart_link = api_create(chart, filename = "FunnelPlot")
+chart_link
+```
+The chart in plotly does not display properly. It does not respect the transformation in the y axis. As that information is in each data point, I removed it to avoid misundertandings.  
+
+
+http://www.perceptualedge.com/articles/visual_business_intelligence/variation_and_its_discontents.pdf
+
+  
+  https://stackoverflow.com/questions/38733403/edit-labels-in-tooltip-for-plotly-maps-using-ggplot2-in-r
+  
+```{r}
+?theme
+```
+ 
+  
