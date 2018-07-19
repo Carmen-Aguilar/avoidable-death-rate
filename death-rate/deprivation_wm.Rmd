@@ -156,14 +156,3 @@ chart_link
 ```
 The chart in plotly does not display properly. It does not respect the transformation in the y axis. As that information is in each data point, I removed it to avoid misundertandings.  
 
-
-http://www.perceptualedge.com/articles/visual_business_intelligence/variation_and_its_discontents.pdf
-
-  
-  https://stackoverflow.com/questions/38733403/edit-labels-in-tooltip-for-plotly-maps-using-ggplot2-in-r
-  
-```{r}
-?theme
-```
- 
-  
