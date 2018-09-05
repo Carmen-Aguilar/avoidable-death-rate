@@ -8,6 +8,6 @@ The R Notebook with the explanation of the analysis for the West Midlands and th
 
 ![Dotchart](https://github.com/Carmen-Aguilar/avoidable-death-rate/blob/master/chart2.png)
 
-And [here](avoidable-death-rate/Death_correlation.Rmd) is the correlation analysis for England and Wales.
+And [here](ahttps://github.com/Carmen-Aguilar/avoidable-death-rate/blob/master/Death_correlation.Rmd) is the correlation analysis for England and Wales.
 
 Get the data from the [BBC Shared Data Unit](https://docs.google.com/spreadsheets/d/1yue8KkL84RbiaiUUOKwQoxyPAhYTlhQOSwQkAz-AQGc/edit?usp=sharing)
