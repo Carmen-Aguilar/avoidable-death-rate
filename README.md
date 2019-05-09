@@ -2,7 +2,7 @@
 
 I published this story [Avoidable death 32% higher in the West Midlands’ most deprived cities](http://birminghameastside.com/2018/07/19/avoidable-death-west-midlands-most-deprived-cities/) on 19th July after an analysis with figures shared by the BBC Shared Data Unit. 
 
-The R Notebook with the explanation of the analysis for the West Midlands and how I did the funnel plot can be found [here.](http://rpubs.com/Carmen_Aguilar/correlation-and-funnelplot) 
+[Here is the R Notebook](http://rpubs.com/Carmen_Aguilar/correlation-and-funnelplot) with the explanation of the analysis for the West Midlands and how I did the funnel plot.
 
 ![Funnelplot](https://github.com/Carmen-Aguilar/avoidable-death-rate/blob/master/funnelplot.png)
 
